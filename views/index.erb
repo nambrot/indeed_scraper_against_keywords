@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/foundation/5.2.2/css/foundation.css">
+    <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js
+
+'></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/foundation/5.2.2/js/foundation.min.js"></script>
+    <script>
+      $(function(){
+        $('form').submit(function(evt){
+          $("#response-string").text("Let me check ...");
+          $("#results").html("")
+          $.get('/listings', {company: $('#company').val(), keywords: $('#keywords').val()}, function(resp){
+            $("#response-string").text("We found " + resp.total_job_listings + " Job Listings and matched " + resp.matched_listings.length + " against your keywords")
+            
+            $.each(resp.matched_listings, function(index, val){
+              $("#results").append("<li><a href='" + val.link + "'>"+val.title+"</a> matching "+ val.matched_keywords.length +" keywords: "+val.matched_keywords.join(', ')+"</li>")
+            })
+          })
+          evt.preventDefault();
+          return false;
+        })
+      })
+    </script>
+  </head>
+  <body>
+    <div id="container" class="row">
+      <header class="large-12 columns">
+        <h1>Scrape it</h1>
+      </header>
+      <div class="large-4 columns">
+        <form>
+          <label for="company">Company:</label>
+          <input type="text" id="company" placeholder="Facebook">
+          <label for="keywords">Keywords (case-sensitive):</label>
+          <input type="text" id="keywords" placeholder="Ruby, Python, Golang, Scala">
+          <input id="submit" type="submit" class="button">
+        </form>
+      </div>
+      <div class="large-8 columns">
+        <h3>Results:</h3>
+        <h5 id="response-string"></h5>
+        <ul id="results">
+          
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
