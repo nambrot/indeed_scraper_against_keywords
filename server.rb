@@ -35,16 +35,24 @@ get '/listings' do
     }  
   }
 
+  listing_urls.keep_if{ |e| e[:matched_keywords].count > 0}
+
+  #exclude keywords that appear in every single matched listing
+  keywords_that_appear_in_all = keywords.zip(listing_urls.map{ |url| keywords.map { |k| url[:matched_keywords].include?(k) } }.transpose.map { |array_of_inclusions| array_of_inclusions.all? }).keep_if{|k| k.last}.map(&:first)
+  listing_urls.map!{|e| e[:matched_keywords].reject!{|keyword| keywords_that_appear_in_all.include?(keyword)}; e; } 
+
+  listing_urls.keep_if{ |e| e[:matched_keywords].count > 0}
+
   # write response
   response = {}
   response[:total_job_listings] = listing_urls.count
-  response[:matched_listings] = listing_urls.keep_if{ |e| e[:matched_keywords].count > 0}.sort_by{|e| -e[:matched_keywords].count }
+  response[:matched_listings] = listing_urls.sort_by{|e| -e[:matched_keywords].count }
   content_type :json
   response.to_json
 end
 
 def match_job_posting_against_keywords(link, keywords)
-  doc = Nokogiri::HTML(HTTParty.get(link, limit: 50)).css('body').text
+  doc = Nokogiri::HTML(HTTParty.get(link, limit: 50)).css('body').inner_text
   matched_keywords = keywords.select {|k| doc.include?(k) }
   matched_keywords
 end
