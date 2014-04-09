@@ -44,6 +44,7 @@ get '/listings' do
 end
 
 def match_job_posting_against_keywords(link, keywords)
-  doc = HTTParty.get(link, limit: 20)
-  matched_keywords = keywords.select {|k| doc.body.include?(k) }
+  doc = Nokogiri::HTML(HTTParty.get(link, limit: 50)).css('body').text
+  matched_keywords = keywords.select {|k| doc.include?(k) }
+  matched_keywords
 end
