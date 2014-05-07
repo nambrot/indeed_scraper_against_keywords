@@ -3,6 +3,7 @@ require 'httparty'
 require 'nokogiri'
 require 'parallel'
 require 'awesome_print'
+require 'csv'
 
 get '/' do
   erb :index
@@ -49,6 +50,28 @@ get '/listings' do
   response[:matched_listings] = listing_urls.sort_by{|e| -e[:matched_keywords].count }
   content_type :json
   response.to_json
+end
+
+get '/companies_hiring' do
+  location = params[:location]
+  keywords = params[:keywords]
+  exclude_companies = CSV.parse(params[:exclude_companies]).first || []
+  companies = []
+  
+  doc = Nokogiri::HTML(HTTParty.get("http://www.indeed.com/jobs?q=#{URI.escape(keywords)}&l=#{URI.escape(location)}"))
+  companies += doc.css('#resultsCol .row .company span').map(&:text)
+  next_link = doc.css('.pagination a:last')
+  while next_link.text.match "Next"
+    url = "http://www.indeed.com/" + next_link.first.attributes["href"].value
+    doc = Nokogiri::HTML(HTTParty.get(url))
+    companies += doc.css('#resultsCol .row .company span').map(&:text)
+    next_link = doc.css('.pagination a:last')
+  end
+
+  companies.uniq!
+  companies -= exclude_companies
+  content_type :json
+  companies.to_json
 end
 
 def match_job_posting_against_keywords(link, keywords)
